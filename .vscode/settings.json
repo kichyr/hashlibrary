@@ -2,7 +2,9 @@
     "files.associations": {
         "hash_lib.h": "c",
         "stdio.h": "c",
-        "hashlib.h": "c"
+        "hashlib.h": "c",
+        "stdlib.h": "c"
     },
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "C_Cpp.dimInactiveRegions": false
 }

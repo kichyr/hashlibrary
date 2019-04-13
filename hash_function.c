@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-//rко-во коллизий
+//кол-во коллизий
 //get_size table
 //создать табличку
 //почистить табличку
@@ -11,7 +11,7 @@
 //Возвращает hash принятого файла
 int hash_function_iterator = 2; // образующий в мультипликативной группе
 
-#define TABLE_SIZE 50// 
+#define TABLE_SIZE 4// 
 
 
 typedef struct data
@@ -41,7 +41,7 @@ int copy_data(Data data) {
 }
 
 int main() {
-    char a[] = {2,5,4,2,5,4,4};
+    char a[] = {1,3,4,3,1,2,4};
     Data test_data;
     test_data.size = 7;
     test_data.data = a;
