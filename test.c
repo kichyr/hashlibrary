@@ -1,5 +1,6 @@
 #include"hashlib.h"
 #include <stdlib.h>
+#include <string.h>
 
 void cover_test(TABLE* t) {
     HTERR err;
@@ -45,10 +46,42 @@ void cover_test(TABLE* t) {
         exit(1);
     }
 
+    //
+    char a5[] = {1,4,3,3,2,2,4,4,4,4,44,4,5,6,7,2,5,17,70,10,1,1,1,1,1,1,1,1,1};
+    Data test_data5;
+    test_data5.size = 29;
+    test_data5.arr = a5;
+
+
+    if(htable_search(t, test_data5, &err) != NULL)
+       printf("cover_test_ no_such_elem: test7 failed!");
 }
 
-Data* generate_data(TABLE* t) {
+void full_table_trash(TABLE* t) {
+    for(int i = 0; i < 10; i++) {
+        
+        size_t size = 15;
+        Data* d = (Data*)malloc(sizeof(Data));
+        
+        d->size = 12;
+        
+        d->arr = malloc(size*sizeof(char));
+        char* temp = (char*)d->arr;
+        for(int j = 0; j < size; j++) {
+            temp[j] = i*j+i;
+        }
+        htable_insert(t, *d, NULL);
+        free(temp);
+        free(d);
+    }
+}
+
+
+int main() {
     HTERR err;
+    TABLE* t = create_hash_table(4, &err);
+
+    //generate data
     char a1[] = {2,5,4,2,5,4,4};
     Data test_data1;
     test_data1.size = 7;
@@ -66,6 +99,17 @@ Data* generate_data(TABLE* t) {
     test_data3.size = 7*4;
     test_data3.arr = a3;
 
+    char a4[] = {1,4,3,3,2,2,2,5,6,7,8,9,10,20,10};
+    Data test_data4;
+    test_data4.size = 15;
+    test_data4.arr = a4;
+
+    char a5[] = {1,4,3,3,2,2,4,4,4,4,44,4,5,6,7,2,5,10,20,10};
+    Data test_data5;
+    test_data5.size = 20;
+    test_data5.arr = a5;
+
+
     Data *data_massive = (Data*)malloc(3*sizeof(Data));
     data_massive[0] = test_data1;
     data_massive[1] = test_data2;
@@ -74,22 +118,35 @@ Data* generate_data(TABLE* t) {
     htable_insert(t, test_data1, &err);
     htable_insert(t, test_data2, &err);
     htable_insert(t, test_data3, &err);
-    return data_massive;
-}
-
-int main() {
-    TABLE* t = create_hash_table(4);
-
-    HTERR err;
-    Data *data_massive = generate_data(t);
+    htable_insert(t, test_data4, &err);
+    htable_insert(t, test_data5, &err);
+    htable_insert(t, test_data5, &err);
+    full_table_trash(t);
+    //
+    //Data *data_massive = generate_data(t);
     
+    //cover errors
     htable_print(t, &err);
+    cover_test(t);
+    //
 
-    printf("kok %i", ((char*)(htable_search(t,test_data2, &err)->arr))[0]);
-    htable_remove_element(t, data_massive[2], &err);
-    htable_insert(t, data_massive[2], &err);
+    printf("\n\n ---some print----\n%i\n", ((char*)(htable_search(t,test_data5, &err)->arr))[0]);
+    printf("\n number collisions: %i\n", t->number_collisions);
+    printf("%i\n ----some print----\n\n", ((char*)(htable_search(t,test_data3, &err)->arr))[0]);
+    htable_remove_element(t, test_data3, &err);
+    //htable_insert(t, test_data3, &err);
+    //printf("kok %i", ((char*)(htable_search(t,test_data3, &err)->arr))[0]);
+    htable_remove_element(t, test_data3, &err);
 
+    htable_insert(t, test_data3, &err);
+
+
+    htable_remove_element(t, test_data3, &err);
     htable_print(t, &err);
+    printf("\n number collisions: %i", t->number_collisions);
+    htable_remove_element(t, test_data2, &err);
+    
+    
 
     htable_remove(t, &err);
     free(data_massive);

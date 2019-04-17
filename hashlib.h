@@ -6,6 +6,7 @@ typedef enum {
 	HTERR_SUCCESS = 0,
 	HTERR_NO_SUCH_ELEM,
 	HTERR_INVPTR,
+	HTERR_INV_ALLOC_MEM,
 } HTERR;
 
 
@@ -29,22 +30,26 @@ typedef struct TABLE
 
 
 
-//LList** TABLE; //
+//LList** TABLE//
 
 int get_hash_BLOB(Data data, size_t table_size);
 
-TABLE* create_hash_table(size_t table_size); //возвращает указатель на созданную
+ //возвращает указатель на созданную
+TABLE* create_hash_table(size_t table_size, HTERR *err);
 
 //Возвращает указатель на сохраненные в таблице данные и NULL в случае, если в таблице таких данных нет
 Data*  htable_search(TABLE* TABLE, Data d, HTERR* err);
 
- //удаляет элемент из таблицы, возвращает 0 в случае успеха
+//удаляет элемент из таблицы, возвращает 0 в случае успеха
 int htable_remove_element(TABLE* TABLE, Data d, HTERR *err);
 
+//Вставка элемента в таблицу
 void  htable_insert(TABLE* TABLE, Data d, HTERR *err);
 
+//вывод таблицы
 void htable_print(TABLE* TABLE, HTERR *err);
 
+//удаление таблицы
 void htable_remove(TABLE* TABLE, HTERR *err);
 
 #endif //_HASH_LIB_H_

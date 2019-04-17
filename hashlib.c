@@ -20,28 +20,41 @@ int get_hash_BLOB(Data data, size_t table_size/*, HT_ERR* err*/) {
 
 //---------------------------------insert_element-----------------------------------
 // Копирует из ptr1 в ptr2 и выделяет память
-void copy(void* ptr1, void** ptr2, size_t size){
-    *ptr2 = malloc(size);
+int copy(void* ptr1, void** ptr2, size_t size, HTERR *err){
+    if((*ptr2 = malloc(size)) == NULL && err != NULL) {
+        return -1;
+    }
     char* c_ptr1 = (char*)ptr1;
     char* c_ptr2 = (char*)*ptr2;
     for(int i = 0; i < size; i++)
         c_ptr2[i] = c_ptr1[i]; 
+    return 0;
 }
 
 void htable_insert(TABLE* TABLE, Data d, HTERR *err) {
-    *err = HTERR_SUCCESS;
-    if(TABLE == NULL) {
+    if(err != NULL) *err = HTERR_SUCCESS;
+    if(err != NULL && TABLE == NULL) {
         *err = HTERR_INVPTR;
         return;
     }
     int hash = get_hash_BLOB(d, TABLE->table_size);
     LList* list = TABLE->table[hash];
-    LList* new = (LList*)malloc(sizeof(LList));
-    copy(d.arr, &(new->data.arr), d.size);
+    LList* new;
+    if((new = (LList*)malloc(sizeof(LList))) == NULL && err != NULL) {
+        *err = HTERR_INV_ALLOC_MEM;
+        return;
+    }
+    
+    if(copy(d.arr, &(new->data.arr), d.size, err) != 0){
+        *err = HTERR_INV_ALLOC_MEM;
+        return;
+    }
 
-    while(list != NULL && list->next != NULL)
+    while(list != NULL && list->next != NULL) {
         list = list->next;
+    }
     if(list != NULL) {
+        TABLE->number_collisions++;
         list->next = new;
         list->next->prev = list;
         list = list->next;
@@ -59,8 +72,8 @@ void htable_insert(TABLE* TABLE, Data d, HTERR *err) {
 
 //выводит хеш таблицу
 void htable_print(TABLE* TABLE, HTERR *err) {
-    *err = HTERR_SUCCESS;
-    if(TABLE == NULL) {
+    if(err != NULL) *err = HTERR_SUCCESS;
+    if(err != NULL && TABLE == NULL) {
         *err = HTERR_INVPTR;
         return;
     }
@@ -69,8 +82,6 @@ void htable_print(TABLE* TABLE, HTERR *err) {
         x = TABLE->table[i];
         printf("for hash %i:\n", i);
         while(x != NULL) {
-            printf("    ");
-            char* test_print = (char*)x->data.arr;
             for(int i = 0; i < x->data.size; i++) {
                 printf("%i, ",((char *)x->data.arr)[i]);
             }
@@ -83,11 +94,19 @@ void htable_print(TABLE* TABLE, HTERR *err) {
 //-------------------------------Creating Table---------------------------------
 
 // Выделяется память под основной массив/фиксируется размер таблицы
-TABLE* create_hash_table(size_t table_size) {
-    TABLE* T = (TABLE*)malloc(sizeof(TABLE));
+TABLE* create_hash_table(size_t table_size, HTERR *err) {
+    if(err != NULL) *err = HTERR_SUCCESS;
+    TABLE* T;
+    if((T = (TABLE*)malloc(sizeof(TABLE))) == NULL && err != NULL) {
+        *err = HTERR_INV_ALLOC_MEM;
+        return NULL;
+    }
     T->table_size = table_size;
     T->number_collisions = 0;
-    T->table = (LList**) malloc(table_size*sizeof(LList*));
+    if((T->table = (LList**) malloc(table_size*sizeof(LList*))) == NULL && err != NULL) {
+        *err = HTERR_INV_ALLOC_MEM;
+        return NULL;
+    }
     for(int i = 0; i < table_size; i++)
         T->table[i] = NULL;
     return T;
@@ -107,19 +126,21 @@ int compare_data(Data d1, Data d2) {
 }
 
 LList** htable_search_List(TABLE* TABLE, Data d) {
-    LList** candidate = &TABLE->table[get_hash_BLOB(d, TABLE->table_size)];
-    while(*candidate != NULL) {
-        if(compare_data((*candidate)->data, d) == 0)
-            return candidate;
-        *candidate = (*candidate)->next;
+    LList** candidate_ptr = &TABLE->table[get_hash_BLOB(d, TABLE->table_size)];
+    LList* candidate = *candidate_ptr;
+    while(candidate != NULL) {
+        if(compare_data((candidate)->data, d) == 0)
+            return candidate_ptr;
+        candidate = (candidate)->next;
+        candidate_ptr = &(candidate);
     }
     return NULL;
 }
 
 //Возвращает указатель на сохраненные в таблице данные и NULL в случае, если в таблице таких данных нет
 Data* htable_search(TABLE* TABLE, Data d, HTERR* err) {
-    *err = HTERR_SUCCESS;
-    if(TABLE == NULL) {
+    if(err != NULL) *err = HTERR_SUCCESS;
+    if(err != NULL && TABLE == NULL) {
         *err = HTERR_INVPTR;
         return NULL;
     }
@@ -131,10 +152,9 @@ Data* htable_search(TABLE* TABLE, Data d, HTERR* err) {
 }
 
 //------------------------------Removing element---------------------------------
-//not tested
 int htable_remove_element(TABLE* TABLE, Data d, HTERR *err) {
-    *err = HTERR_SUCCESS;
-    if(TABLE == NULL) {
+    if(err != NULL) *err = HTERR_SUCCESS;
+    if(err != NULL && TABLE == NULL) {
         *err = HTERR_INVPTR;
         return -1;
     }
@@ -145,25 +165,33 @@ int htable_remove_element(TABLE* TABLE, Data d, HTERR *err) {
         *err = HTERR_NO_SUCH_ELEM;
         return -1;
     }
+
+    if((*l)->prev != NULL || (*l)->next != NULL)
+        TABLE->number_collisions--;
+
     if((*l)->prev != NULL)
         (*l)->prev->next = (*l)->next;
+    
     if((*l)->next != NULL)
         (*l)->next->prev = (*l)->prev;
-    free((*l)->data.arr);
-    free((*l));
-    (*l) = NULL;
+
+    LList* k = *l;
+    if((*l)->prev == NULL && (*l)->next != NULL)
+        TABLE->table[get_hash_BLOB(d, TABLE->table_size)] = ((*l)->next);
+    free((k)->data.arr);
+    free((k));
+    //(k) = NULL;
     return 0;
 }
 
 
 //------------------------------Removing Table-----------------------------------
 void htable_remove(TABLE* TABLE, HTERR *err) {
-    *err = HTERR_SUCCESS;
-    if(TABLE == NULL) {
+    if(err != NULL) *err = HTERR_SUCCESS;
+    if(err != NULL && TABLE == NULL) {
         *err = HTERR_INVPTR;
         return;
     }
-
     LList *x, *y;
     for(int i = 0; i < TABLE->table_size; i++) {
         x = TABLE->table[i];
