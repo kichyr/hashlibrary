@@ -78,7 +78,7 @@ void full_table_trash(TABLE* t) {
 
 
 int main() {
-    HTERR err;
+    HTERR err = HTERR_SUCCESS;
     TABLE* t = create_hash_table(4, &err);
 
     //generate data
@@ -121,15 +121,14 @@ int main() {
     htable_insert(t, test_data4, &err);
     htable_insert(t, test_data5, &err);
     htable_insert(t, test_data5, &err);
-    full_table_trash(t);
+    //full_table_trash(t);
     //
     //Data *data_massive = generate_data(t);
     
     //cover errors
-    htable_print(t, &err);
     cover_test(t);
     //
-
+    htable_print(t, &err);
     printf("\n\n ---some print----\n%i\n", ((char*)(htable_search(t,test_data5, &err)->arr))[0]);
     printf("\n number collisions: %i\n", t->number_collisions);
     printf("%i\n ----some print----\n\n", ((char*)(htable_search(t,test_data3, &err)->arr))[0]);
@@ -146,7 +145,7 @@ int main() {
     printf("\n number collisions: %i", t->number_collisions);
     htable_remove_element(t, test_data2, &err);
     
-    
+    htable_print(t, &err);
 
     htable_remove(t, &err);
     free(data_massive);

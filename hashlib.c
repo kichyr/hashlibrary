@@ -2,9 +2,7 @@
 #include"hashlib.h"
 
 
-
 //---------------------------------hash function-----------------------------------
-
 int get_hash_BLOB(Data data, size_t table_size/*, HT_ERR* err*/) {
     int hash = 0;
     size_t iterator = data.size/table_size+1;
@@ -15,7 +13,6 @@ int get_hash_BLOB(Data data, size_t table_size/*, HT_ERR* err*/) {
     }
     return hash;
 }
-
 
 
 //---------------------------------insert_element-----------------------------------
@@ -125,9 +122,13 @@ int compare_data(Data d1, Data d2) {
     return 0;
 }
 
+
+LList* candidate;
 LList** htable_search_List(TABLE* TABLE, Data d) {
+    if(TABLE->table[get_hash_BLOB(d, TABLE->table_size)] == NULL)
+        return NULL;
     LList** candidate_ptr = &TABLE->table[get_hash_BLOB(d, TABLE->table_size)];
-    LList* candidate = *candidate_ptr;
+    candidate = *candidate_ptr;
     while(candidate != NULL) {
         if(compare_data((candidate)->data, d) == 0)
             return candidate_ptr;
@@ -144,10 +145,11 @@ Data* htable_search(TABLE* TABLE, Data d, HTERR* err) {
         *err = HTERR_INVPTR;
         return NULL;
     }
-
     LList** l = htable_search_List(TABLE, d);
-    if(l != NULL)
+    
+    if(l != NULL) {
         return &((*l)->data);
+    }
     return NULL;
 }
 
@@ -158,13 +160,15 @@ int htable_remove_element(TABLE* TABLE, Data d, HTERR *err) {
         *err = HTERR_INVPTR;
         return -1;
     }
-
-    LList** l = htable_search_List(TABLE, d);
+    LList** l = NULL;
+    l = htable_search_List(TABLE, d);
 
     if( l == NULL ) {
         *err = HTERR_NO_SUCH_ELEM;
         return -1;
     }
+
+    //printf("------------------------%i-----------------------", *l);
 
     if((*l)->prev != NULL || (*l)->next != NULL)
         TABLE->number_collisions--;
@@ -178,12 +182,12 @@ int htable_remove_element(TABLE* TABLE, Data d, HTERR *err) {
     LList* k = *l;
     if((*l)->prev == NULL && (*l)->next != NULL)
         TABLE->table[get_hash_BLOB(d, TABLE->table_size)] = ((*l)->next);
+    if((*l)->prev == NULL && (*l)->next == NULL)
+        TABLE->table[get_hash_BLOB(d, TABLE->table_size)] = NULL;
     free((k)->data.arr);
     free((k));
-    //(k) = NULL;
     return 0;
 }
-
 
 //------------------------------Removing Table-----------------------------------
 void htable_remove(TABLE* TABLE, HTERR *err) {
